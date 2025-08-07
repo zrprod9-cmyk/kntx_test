@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-export const API_BASE = import.meta.env.VITE_API_URL || 'https://kontext.gosystem.io/api';
+// Default API location used when VITE_API_URL isn't provided
+const DEFAULT_API_BASE = 'https://kontext.gosystem.io/api';
+export const API_BASE = import.meta.env.VITE_API_URL || DEFAULT_API_BASE;
 const DEBUG = import.meta.env.VITE_DEBUG === 'true';
 
 const api = axios.create({ baseURL: API_BASE });
