@@ -3,7 +3,6 @@ import fssync from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import express from 'express';
-import cors from 'cors';
 import multer from 'multer';
 import { fal } from '@fal-ai/client';
 import { Blob } from 'buffer';
@@ -50,7 +49,7 @@ const withLock = async (key, fn) => {
 
 /* ---------- express ---------- */
 const app = express();
-app.use(cors());
+// API and UI are served from the same origin, so no CORS middleware is needed
 app.use(express.json({ limit: '5mb' }));
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -226,7 +225,8 @@ const dist = path.join(__dirname, '..', 'client', 'dist');
 
 if (fssync.existsSync(dist)) {
   app.use(express.static(dist));
-  app.get('*', (_, res) => res.sendFile('index.html', { root: dist }));
+  // Serve index.html for all non-API routes to enable client-side routing
+  app.get(/^\/(?!api).*/, (_, res) => res.sendFile('index.html', { root: dist }));
 } else {
   console.warn('⚠️  client/dist не найден — сначала выполните `npm run build` в папке client');
 }

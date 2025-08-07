@@ -11,5 +11,10 @@ export default defineConfig({
       '127.0.0.1',
       'kontext.gosystem.io'
     ]
+  },
+  // Build React app into client/dist so Express can serve it
+  build: {
+    outDir: 'dist',
+    emptyOutDir: true
   }
 });
