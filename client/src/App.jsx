@@ -48,17 +48,18 @@ export default function App() {
       .catch((e) => console.error('Failed to load loras', e));
     (async () => {
       try {
-        const { data: boards } = await api.get('/boards');
-        setBoards(boards);
-        if (boards.length) setBid(boards[boards.length - 1].id);
+        const { data: boardsData } = await api.get('/boards');
+        const boardsArr = Array.isArray(boardsData) ? boardsData : [];
+        setBoards(boardsArr);
+        if (boardsArr.length) setBid(boardsArr[boardsArr.length - 1].id);
         const cacheObj = {};
         const thumbsObj = {};
         await Promise.all(
-          boards.map(async (b) => {
+          boardsArr.map(async (b) => {
             const { data: imgs } = await api.get(`/boards/${b.id}`);
-            cacheObj[b.id] = imgs;
-            cacheImages(imgs);
-            const last = imgs.at(-1)?.url;
+            cacheObj[b.id] = Array.isArray(imgs) ? imgs : [];
+            cacheImages(cacheObj[b.id]);
+            const last = cacheObj[b.id].at(-1)?.url;
             if (last) thumbsObj[b.id] = last;
           })
         );
@@ -81,11 +82,12 @@ export default function App() {
     }
     api.get(`/boards/${bid}`)
       .then((r) => {
-        setGal(r.data);
-        setCache((c) => ({ ...c, [bid]: r.data }));
-        if (r.data.length)
-          setThumbs((t) => ({ ...t, [bid]: r.data[r.data.length - 1].url }));
-        cacheImages(r.data);
+        const imgs = Array.isArray(r.data) ? r.data : [];
+        setGal(imgs);
+        setCache((c) => ({ ...c, [bid]: imgs }));
+        if (imgs.length)
+          setThumbs((t) => ({ ...t, [bid]: imgs[imgs.length - 1].url }));
+        cacheImages(imgs);
       })
       .catch((e) => console.error('Failed to load board', e));
   }, [bid, cached]);
@@ -184,19 +186,20 @@ export default function App() {
 
       <div className="relative flex-1 overflow-y-auto">
         <div className="mx-auto grid max-w-4xl grid-cols-1 gap-6 p-6 md:grid-cols-2">
-          {gallery.map((g) =>
-            g.loading ? (
-              <LoaderCard key={g.id} />
-            ) : (
-              <ImageCard
-                key={g.id}
-                img={g}
-                boardId={bid}
-                onRemove={removeImage}
-                onShow={setShow}
-              />
-            )
-          )}
+          {gallery.map((g) => (
+            <React.Fragment key={g.id}>
+              {g.loading ? (
+                <LoaderCard />
+              ) : (
+                <ImageCard
+                  img={g}
+                  boardId={bid}
+                  onRemove={removeImage}
+                  onShow={setShow}
+                />
+              )}
+            </React.Fragment>
+          ))}
           <div ref={bottom}></div>
         </div>
 

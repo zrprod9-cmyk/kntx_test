@@ -68,9 +68,12 @@ const corsOptions = {
     if (!origin || allowedOrigins.includes(origin)) cb(null, true);
     else cb(new Error('Not allowed by CORS'));
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type']
 };
 
+// Enable CORS and preflight requests for all routes
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 
@@ -285,7 +288,7 @@ app.use((err, req, res, next) => {
 
 /* ---------- запускаем ---------- */
 const PORT = process.env.PORT || 4000;
-const HOST = '0.0.0.0';
+const HOST = process.env.HOST || '0.0.0.0';
 const server = app.listen(PORT, HOST, () =>
   console.log(`API & UI ⇒ http://${HOST}:${PORT}`)
 );
