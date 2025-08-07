@@ -4,7 +4,7 @@ import axios from 'axios';
 import { Plus, X, Pencil, Trash2 } from 'lucide-react';
 import Compare from './Compare';
 
-const API = import.meta.env.VITE_API_URL || '';
+const API = import.meta.env.VITE_API_URL || 'https://kontext.gosystem.io/api';
 
 export default function LoraModal({
   open,
@@ -37,7 +37,7 @@ export default function LoraModal({
 
   const handleDelete = async (id) => {
     if (!window.confirm('Удалить эту LoRA?')) return;
-    await axios.delete(`${API}/api/loras/${id}`);
+    await axios.delete(`${API}/loras/${id}`);
     onDelete(id);
     if (editId === id) reset();
   };
@@ -52,10 +52,10 @@ export default function LoraModal({
     Object.entries(files).forEach(([k, v]) => v && fd.append(k, v));
 
     if (editId > 0) {
-      await axios.put(`${API}/api/loras/${editId}`, fd);
+      await axios.put(`${API}/loras/${editId}`, fd);
       onUpdate(editId, f);
     } else {
-      const { data } = await axios.post(`${API}/api/loras`, fd);
+      const { data } = await axios.post(`${API}/loras`, fd);
       onAdd(data);
     }
     reset();
