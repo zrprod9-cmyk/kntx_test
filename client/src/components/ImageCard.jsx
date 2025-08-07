@@ -1,8 +1,6 @@
 /* client/src/components/ImageCard.jsx */
-import axios from 'axios';
+import api from '../api';
 import { Download, Trash2 } from 'lucide-react';
-
-const API = import.meta.env.VITE_API_URL || 'https://kontext.gosystem.io/api';
 
 export default function ImageCard({ img, boardId, onRemove, onShow }) {
   const save = async () => {
@@ -17,8 +15,12 @@ export default function ImageCard({ img, boardId, onRemove, onShow }) {
   };
 
   const del = async () => {
-    await axios.delete(`${API}/boards/${boardId}/images/${img.id}`);
-    onRemove(img.id);
+    try {
+      await api.delete(`/boards/${boardId}/images/${img.id}`);
+      onRemove(img.id);
+    } catch (e) {
+      console.error('Failed to delete image', e);
+    }
   };
 
   return (
