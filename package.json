@@ -6,7 +6,8 @@
     "install-all": "npm --prefix server install && npm --prefix client install",
     "dev": "concurrently \"npm --prefix server run dev\" \"npm --prefix client run dev -- --host\"",
     "build": "npm --prefix client run build",
-    "serve": "npm --prefix server run serve"
+    "serve": "npm --prefix server run serve",
+    "start": "npm run build && npm run serve"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
