@@ -1,0 +1,35 @@
+/* === глобальные базовые === */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 222.2 47.4% 11.2%;
+    --foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --border: 217.2 32.6% 17.5%;
+    --primary: 263.4 70% 50.5%;
+    --primary-foreground: 210 40% 98%;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+/* скроллбар (необязательно) */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: #2b2b2b;
+  border-radius: 4px;
+}
