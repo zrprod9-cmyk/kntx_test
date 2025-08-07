@@ -49,7 +49,26 @@ const withLock = async (key, fn) => {
 
 /* ---------- express ---------- */
 const app = express();
+
 // API and UI are served from the same origin, so no CORS middleware is needed
+
+
+const allowedOrigins = [
+  'https://kontext.gosystem.io',
+  'http://localhost:5173'
+];
+
+const corsOptions = {
+  origin: (origin, cb) => {
+    if (!origin || allowedOrigins.includes(origin)) cb(null, true);
+    else cb(new Error('Not allowed by CORS'));
+  },
+  credentials: true
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+
 app.use(express.json({ limit: '5mb' }));
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -232,7 +251,9 @@ if (fssync.existsSync(dist)) {
 }
 
 /* ---------- запускаем ---------- */
-const server = app.listen(4000, () =>
-  console.log('API & UI ⇒ http://localhost:4000')
+const PORT = process.env.PORT || 4000;
+const HOST = '0.0.0.0';
+const server = app.listen(PORT, HOST, () =>
+  console.log(`API & UI ⇒ http://${HOST}:${PORT}`)
 );
 server.setTimeout(240_000); // 4 минуты на любой запрос

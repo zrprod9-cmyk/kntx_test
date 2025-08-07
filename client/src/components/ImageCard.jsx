@@ -2,7 +2,7 @@
 import axios from 'axios';
 import { Download, Trash2 } from 'lucide-react';
 
-const API = import.meta.env.VITE_API_URL || '';
+const API = import.meta.env.VITE_API_URL || 'https://kontext.gosystem.io/api';
 
 export default function ImageCard({ img, boardId, onRemove, onShow }) {
   const save = async () => {
@@ -17,7 +17,7 @@ export default function ImageCard({ img, boardId, onRemove, onShow }) {
   };
 
   const del = async () => {
-    await axios.delete(`${API}/api/boards/${boardId}/images/${img.id}`);
+    await axios.delete(`${API}/boards/${boardId}/images/${img.id}`);
     onRemove(img.id);
   };
 

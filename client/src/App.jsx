@@ -9,7 +9,7 @@ import LoraModal from './components/LoraModal';
 import ImageModal from './components/ImageModal';
 import ControlBar from './components/ControlBar';
 
-const API = import.meta.env.VITE_API_URL || '';
+const API = import.meta.env.VITE_API_URL || 'https://kontext.gosystem.io/api';
 
 export default function App() {
   const [boards, setBoards] = useState([]);
@@ -42,16 +42,16 @@ export default function App() {
   };
 
   useEffect(() => {
-    axios.get(`${API}/api/loras`).then((r) => setLoraList(r.data));
+    axios.get(`${API}/loras`).then((r) => setLoraList(r.data));
     (async () => {
-      const { data: boards } = await axios.get(`${API}/api/boards`);
+      const { data: boards } = await axios.get(`${API}/boards`);
       setBoards(boards);
       if (boards.length) setBid(boards[boards.length - 1].id);
       const cacheObj = {};
       const thumbsObj = {};
       await Promise.all(
         boards.map(async (b) => {
-          const { data: imgs } = await axios.get(`${API}/api/boards/${b.id}`);
+          const { data: imgs } = await axios.get(`${API}/boards/${b.id}`);
           cacheObj[b.id] = imgs;
           cacheImages(imgs);
           const last = imgs.at(-1)?.url;
@@ -72,7 +72,7 @@ export default function App() {
         setThumbs((t) => ({ ...t, [bid]: cached[cached.length - 1].url }));
       return;
     }
-    axios.get(`${API}/api/boards/${bid}`).then((r) => {
+    axios.get(`${API}/boards/${bid}`).then((r) => {
       setGal(r.data);
       setCache((c) => ({ ...c, [bid]: r.data }));
       if (r.data.length)
@@ -117,14 +117,13 @@ export default function App() {
     setErr('');
 
     try {
-      const fd = new FormData();
       file ? fd.append('image', file) : fd.append('image_url', preview);
       fd.append('prompt', prompt);
       if (pick?.url) fd.append('lora_path', pick.url);
       if (pick?.name) fd.append('lora_name', pick.name);
 
       const { data } = await axios.post(
-        `${API}/api/boards/${bid}/generate`,
+        `${API}/boards/${bid}/generate`,
         fd
       );
 
@@ -149,7 +148,7 @@ export default function App() {
   };
 
   const newBoard = async () => {
-    const { data } = await axios.post(`${API}/api/boards`);
+    const { data } = await axios.post(`${API}/boards`);
     setBoards([...boards, data]);
     setBid(data.id);
     setGal([]);
@@ -165,7 +164,7 @@ export default function App() {
         onNew={newBoard}
         onPick={setBid}
         onDelete={async (id) => {
-          await axios.delete(`${API}/api/boards/${id}`);
+          await axios.delete(`${API}/boards/${id}`);
           setBoards(boards.filter((b) => b.id !== id));
           setCache((c) => {
             const { [id]: _, ...rest } = c;
