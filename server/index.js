@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import express from 'express';
 import multer from 'multer';
+import cors from 'cors';
 import { fal } from '@fal-ai/client';
 import { Blob } from 'buffer';
 import dotenv from 'dotenv';
@@ -11,7 +12,14 @@ import dotenv from 'dotenv';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /* ---------- ENV & FAL ---------- */
-dotenv.config({ path: path.join(__dirname, '.env') });
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
+const DEBUG = process.env.DEBUG === 'true';
+process.on('unhandledRejection', (err) => {
+  console.error('[UNHANDLED REJECTION]', err);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[UNCAUGHT EXCEPTION]', err);
+});
 
 const falKey = process.env.FAL_KEY;
 if (!falKey) {
@@ -49,10 +57,6 @@ const withLock = async (key, fn) => {
 
 /* ---------- express ---------- */
 const app = express();
-
-// API and UI are served from the same origin, so no CORS middleware is needed
-
-
 const allowedOrigins = [
   'https://kontext.gosystem.io',
   'http://localhost:5173'
@@ -60,6 +64,7 @@ const allowedOrigins = [
 
 const corsOptions = {
   origin: (origin, cb) => {
+    if (DEBUG) console.log('[CORS]', origin);
     if (!origin || allowedOrigins.includes(origin)) cb(null, true);
     else cb(new Error('Not allowed by CORS'));
   },
@@ -70,7 +75,29 @@ app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 
 app.use(express.json({ limit: '5mb' }));
+
+app.use((req, res, next) => {
+  if (DEBUG) {
+    console.log(`[REQ] ${req.method} ${req.originalUrl}`);
+    if (req.method === 'POST') console.log('[BODY]', req.body);
+  }
+  const oldJson = res.json.bind(res);
+  res.json = (data) => {
+    if (DEBUG) console.log(`[RES] ${req.method} ${req.originalUrl}`, data);
+    return oldJson(data);
+  };
+  const oldSend = res.send.bind(res);
+  res.send = (data) => {
+    if (DEBUG) console.log(`[RES] ${req.method} ${req.originalUrl}`, data);
+    return oldSend(data);
+  };
+  next();
+});
 const upload = multer({ storage: multer.memoryStorage() });
+
+app.get('/api/status', (_, res) => {
+  res.json({ status: 'ok' });
+});
 
 /* ---------- LoRA CRUD ---------- */
 app.get('/api/loras', async (_, res) => res.json(await read(loraFile)));
@@ -249,6 +276,12 @@ if (fssync.existsSync(dist)) {
 } else {
   console.warn('⚠️  client/dist не найден — сначала выполните `npm run build` в папке client');
 }
+
+app.use((err, req, res, next) => {
+  console.error('[ERROR]', err.stack);
+  if (res.headersSent) return next(err);
+  res.status(err.status || 500).json({ error: err.message || 'Internal Server Error' });
+});
 
 /* ---------- запускаем ---------- */
 const PORT = process.env.PORT || 4000;

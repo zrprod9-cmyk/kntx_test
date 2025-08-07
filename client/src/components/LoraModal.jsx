@@ -1,10 +1,8 @@
 /* client/src/components/LoraModal.jsx */
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api';
 import { Plus, X, Pencil, Trash2 } from 'lucide-react';
 import Compare from './Compare';
-
-const API = import.meta.env.VITE_API_URL || 'https://kontext.gosystem.io/api';
 
 export default function LoraModal({
   open,
@@ -37,7 +35,12 @@ export default function LoraModal({
 
   const handleDelete = async (id) => {
     if (!window.confirm('Удалить эту LoRA?')) return;
-    await axios.delete(`${API}/loras/${id}`);
+    try {
+      await api.delete(`/loras/${id}`);
+    } catch (e) {
+      console.error('Failed to delete lora', e);
+      return;
+    }
     onDelete(id);
     if (editId === id) reset();
   };
@@ -52,10 +55,10 @@ export default function LoraModal({
     Object.entries(files).forEach(([k, v]) => v && fd.append(k, v));
 
     if (editId > 0) {
-      await axios.put(`${API}/loras/${editId}`, fd);
+      await api.put(`/loras/${editId}`, fd);
       onUpdate(editId, f);
     } else {
-      const { data } = await axios.post(`${API}/loras`, fd);
+      const { data } = await api.post('/loras', fd);
       onAdd(data);
     }
     reset();

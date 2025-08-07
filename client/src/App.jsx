@@ -1,5 +1,5 @@
 /* client/src/App.jsx */
-import axios from 'axios';
+import api, { checkApiStatus } from './api';
 import React, { useState, useEffect, useRef } from 'react';
 
 import Sidebar from './components/Sidebar';
@@ -9,7 +9,7 @@ import LoraModal from './components/LoraModal';
 import ImageModal from './components/ImageModal';
 import ControlBar from './components/ControlBar';
 
-const API = import.meta.env.VITE_API_URL || 'https://kontext.gosystem.io/api';
+// Base URL handled inside api.js
 
 export default function App() {
   const [boards, setBoards] = useState([]);
@@ -42,24 +42,31 @@ export default function App() {
   };
 
   useEffect(() => {
-    axios.get(`${API}/loras`).then((r) => setLoraList(r.data));
+    checkApiStatus().catch((e) => console.error('API status check failed', e));
+    api.get('/loras')
+      .then((r) => setLoraList(r.data))
+      .catch((e) => console.error('Failed to load loras', e));
     (async () => {
-      const { data: boards } = await axios.get(`${API}/boards`);
-      setBoards(boards);
-      if (boards.length) setBid(boards[boards.length - 1].id);
-      const cacheObj = {};
-      const thumbsObj = {};
-      await Promise.all(
-        boards.map(async (b) => {
-          const { data: imgs } = await axios.get(`${API}/boards/${b.id}`);
-          cacheObj[b.id] = imgs;
-          cacheImages(imgs);
-          const last = imgs.at(-1)?.url;
-          if (last) thumbsObj[b.id] = last;
-        })
-      );
-      setCache(cacheObj);
-      setThumbs((t) => ({ ...t, ...thumbsObj }));
+      try {
+        const { data: boards } = await api.get('/boards');
+        setBoards(boards);
+        if (boards.length) setBid(boards[boards.length - 1].id);
+        const cacheObj = {};
+        const thumbsObj = {};
+        await Promise.all(
+          boards.map(async (b) => {
+            const { data: imgs } = await api.get(`/boards/${b.id}`);
+            cacheObj[b.id] = imgs;
+            cacheImages(imgs);
+            const last = imgs.at(-1)?.url;
+            if (last) thumbsObj[b.id] = last;
+          })
+        );
+        setCache(cacheObj);
+        setThumbs((t) => ({ ...t, ...thumbsObj }));
+      } catch (e) {
+        console.error('Failed to load boards', e);
+      }
     })();
   }, []);
 
@@ -72,13 +79,15 @@ export default function App() {
         setThumbs((t) => ({ ...t, [bid]: cached[cached.length - 1].url }));
       return;
     }
-    axios.get(`${API}/boards/${bid}`).then((r) => {
-      setGal(r.data);
-      setCache((c) => ({ ...c, [bid]: r.data }));
-      if (r.data.length)
-        setThumbs((t) => ({ ...t, [bid]: r.data[r.data.length - 1].url }));
-      cacheImages(r.data);
-    });
+    api.get(`/boards/${bid}`)
+      .then((r) => {
+        setGal(r.data);
+        setCache((c) => ({ ...c, [bid]: r.data }));
+        if (r.data.length)
+          setThumbs((t) => ({ ...t, [bid]: r.data[r.data.length - 1].url }));
+        cacheImages(r.data);
+      })
+      .catch((e) => console.error('Failed to load board', e));
   }, [bid, cached]);
 
   useEffect(() => {
@@ -117,15 +126,13 @@ export default function App() {
     setErr('');
 
     try {
+      const fd = new FormData();
       file ? fd.append('image', file) : fd.append('image_url', preview);
       fd.append('prompt', prompt);
       if (pick?.url) fd.append('lora_path', pick.url);
       if (pick?.name) fd.append('lora_name', pick.name);
 
-      const { data } = await axios.post(
-        `${API}/boards/${bid}/generate`,
-        fd
-      );
+      const { data } = await api.post(`/boards/${bid}/generate`, fd);
 
       setGal((g) => g.map((it) => (it.id === tmpId ? data : it)));
       setCache((c) => ({
@@ -148,7 +155,7 @@ export default function App() {
   };
 
   const newBoard = async () => {
-    const { data } = await axios.post(`${API}/boards`);
+    const { data } = await api.post('/boards');
     setBoards([...boards, data]);
     setBid(data.id);
     setGal([]);
@@ -164,7 +171,7 @@ export default function App() {
         onNew={newBoard}
         onPick={setBid}
         onDelete={async (id) => {
-          await axios.delete(`${API}/boards/${id}`);
+          await api.delete(`/boards/${id}`);
           setBoards(boards.filter((b) => b.id !== id));
           setCache((c) => {
             const { [id]: _, ...rest } = c;
